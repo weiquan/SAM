@@ -1,3 +1,20 @@
+#*
+# * =====================================================================================
+# *
+# *       Filename:  statSam.py
+# *
+# *    Description:  
+# *
+# *        Version:  1.0
+# *        Created:  12/22/2012 03:41:52 PM
+# *       Revision:  none
+# *   
+# *
+# *         Author:  Wei Quan (mn), wquanhit@gmail.com
+# *        Company:  BIC, HIT
+# *
+# * =====================================================================================
+# */
 import sys;
 import pysam;
 usage = """ statSam <prefix.bam> 
