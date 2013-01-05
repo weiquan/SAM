@@ -17,8 +17,9 @@
 # */
 import sys
 import os
-usage = """ diffSam <file1.sam> 
-	    print alned reads which are in file1 but not in file 2	"""
+usage = '''*****Test repeat alignment in samfile*****"""	
+		Usage:	RepeatSam.py <file1.sam> 
+
 #from samtools
 #static inline int strnum_cmp(const char *a, const char *b)
 #{
@@ -116,7 +117,7 @@ def testRepeat_main(argv):
 	last_line = ''
 	line = fp.readline()
 	while len(line):
-		if line.split('\t')[0] != last_line.split('\t')[0]:
+		if comp_seq_name(line.split('\t')[0], last_line.split('\t')[0]) != 0:
 			last_line = line
 		else:
 			print line

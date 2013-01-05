@@ -43,9 +43,12 @@ def alnEval(arg):
     mappedReadsNum = 0
     totReadsNum = 0
     perfectAlnNum = 0
+
+    OutPutUnMappedReads = False
+    fp_unmapped = 0
     #parse opt
     try:
-        opts, args = getopt.getopt(arg[1:], "h",['help'])
+        opts, args = getopt.getopt(arg[1:], "hu:",['help'])
     except getopt.GetoptError as err:
         # print help information and exit:
         print >>sys.stderr, str(err) # will print something like "option -a not recognized"
@@ -55,6 +58,9 @@ def alnEval(arg):
         if o in ("-h", "--help"):
             print >>sys.stderr,usage_alnEval
             sys.exit()
+        elif o in('-u'):
+            OutPutUnMappedReads = True
+            fp_unmapped = open(a, 'w')
         else:
             assert False, "unhandled option"
     # ...
@@ -85,6 +91,8 @@ def alnEval(arg):
         answerChr, answerLeftPos, answerRightPos = parseWgsimAnswer(seqName)
         if flag & FLAG_UNMAP != 0:
             unmappedReadsNum = unmappedReadsNum +1
+            if(OutPutUnMappedReads):
+                print >>fp_unmapped, line
         else:
             mappedReadsNum = mappedReadsNum +1
             if ref == answerChr:
@@ -99,6 +107,8 @@ def alnEval(arg):
             print >>sys.stderr, 'eval %u reads...'%(totReadsNum)
 
         line = fp.readline()
+    if(OutPutUnMappedReads):
+        fp_unmapped.close()
     fp.close()
     print '**********************************************'
     print 'Evaluation of the alignment result!'
