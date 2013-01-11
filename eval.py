@@ -105,17 +105,18 @@ def alnEval(arg):
         totReadsNum = totReadsNum +1
         if totReadsNum % 100000 == 0:
             print >>sys.stderr, 'eval %u reads...'%(totReadsNum)
-
-        line = fp.readline()
+	line = fp.readline()
+    
+    print >>sys.stderr, 'eval %u reads...'%(totReadsNum)
     if(OutPutUnMappedReads):
         fp_unmapped.close()
     fp.close()
     print '**********************************************'
     print 'Evaluation of the alignment result!'
-    print 'Unmapped reads Num : %u'%(unmappedReadsNum)
-    print 'Mapped reads Num : %u'%(mappedReadsNum)
     print 'Total reads Num : %u'%(totReadsNum)
-    print 'Prefect alignment Num : %u'%(perfectAlnNum)
+    print "Unmapped reads Num : %u, percent %f"%(unmappedReadsNum, (unmappedReadsNum *1.0)/totReadsNum)
+    print "Mapped reads Num : %u, percent %f"%(mappedReadsNum, (mappedReadsNum * 1.0)/totReadsNum)
+    print "Prefect alignment Num : %u, percent %f"%(perfectAlnNum, (perfectAlnNum * 1.0)/totReadsNum)
     print '**********************************************'
 
 if __name__ == '__main__':
