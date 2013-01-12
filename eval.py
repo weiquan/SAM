@@ -19,11 +19,23 @@ import re
 import sys
 import getopt
 usage = '''
-Usage:           eval.py <cmd> [opt]
-Cmd:                      aln        evaluation alignment result in sam file'''
+Usage:          eval.py    <cmd>   [opt]
+
+Cmd:            aln        evaluation alignment result in sam file'''
+
 usage_alnEval = '''
-Usage:       eval.py aln [opt] <samfile>
-opt:                                     '''
+Usage:          eval.py     aln     [opt]   <samfile>
+
+opt:            -h --h      help 
+                -u          output unmapped Reads'''
+UHIT = 0 #un hit
+PHIT = 1 #perfect hit
+GHIT = 2 #good hit
+BHIT = 3 #bad hit
+FLAG_UNMAP = 0x4
+FLAG_REVERSE = 0x10
+
+
 def parseWgsimAnswer(seqName):
     pattern = re.compile(r'_\d+_\d+_')
     match = pattern.search(seqName)
@@ -35,20 +47,41 @@ def parseWgsimAnswer(seqName):
     posLeft = long(posLeft)
     posRight = long(posRight)
     return chrome, posLeft, posRight
+def evalWgsimSeq(samLine, evalDic, optDic):
+        sam = samLine.split('\t')
+        seqName, flag, ref, pos, Mapq, cigar, mateRef, matePos, templateLen, seq, qual = sam[:11]
+        flag = int(flag)
+        pos = long(pos)
+        #templateLen = int(templateLen)
+        templateLen = 100
+        answerChr, answerLeftPos, answerRightPos = parseWgsimAnswer(seqName)
+        if flag & FLAG_UNMAP != 0:
+            evalDic['unmappedReadsNum'] = evalDic['unmappedReadsNum'] +1
+            return UHIT 
+        else:
+            evalDic['mappedReadsNum'] = evalDic['mappedReadsNum'] +1
+            if ref == answerChr:
+                if flag & FLAG_REVERSE == 0:
+                    if pos == answerLeftPos:
+                        evalDic['perfectAlnNum'] = evalDic['perfectAlnNum'] +1
+                    return PHIT
+                else:
+                    if pos == answerRightPos - templateLen+1:
+                        evalDic['perfectAlnNum'] = evalDic['perfectAlnNum'] +1
+                    return PHIT
 def alnEval(arg):
-    FLAG_UNMAP = 0x4
-    FLAG_REVERSE = 0x10
 
-    unmappedReadsNum = 0
-    mappedReadsNum = 0
-    totReadsNum = 0
-    perfectAlnNum = 0
 
-    OutPutUnMappedReads = False
-    fp_unmapped = 0
+
+
+
+    optDic = {'OutPutUnMappedReads':False, 'simulator' : ''}
+    evalDic = {'unmappedReadsNum':0, 'mappedReadsNum':0, 'perfectAlnNum':0}
+
+
     #parse opt
     try:
-        opts, args = getopt.getopt(arg[1:], "hu:",['help'])
+        opts, args = getopt.getopt(arg[1:], "hu:",['help', 'wgsim'])
     except getopt.GetoptError as err:
         # print help information and exit:
         print >>sys.stderr, str(err) # will print something like "option -a not recognized"
@@ -59,8 +92,10 @@ def alnEval(arg):
             print >>sys.stderr,usage_alnEval
             sys.exit()
         elif o in('-u'):
-            OutPutUnMappedReads = True
+            optDic['OutPutUnMappedReads'] = True
             fp_unmapped = open(a, 'w')
+        elif o in('--wgsim'):
+            optDic['simulator'] = 'wgsim'
         else:
             assert False, "unhandled option"
     # ...
@@ -70,6 +105,7 @@ def alnEval(arg):
 
     samFileName = args[0]
 
+    totReadsNum = 0
     print >>sys.stderr, 'Begin evaluation...'
     fp = open(samFileName, 'r')
     line = fp.readline()
@@ -79,38 +115,27 @@ def alnEval(arg):
             line = fp.readline()
             continue
         #
-        samFormat = line.split('\t')
-        #print samFormat
-
-        seqName, flag, ref, pos, Mapq, cigar, mateRef, matePos, templateLen, seq, qual = samFormat[:11]
-        flag = int(flag)
-        pos = long(pos)
-        #templateLen = int(templateLen)
-        templateLen = 100
-
-        answerChr, answerLeftPos, answerRightPos = parseWgsimAnswer(seqName)
-        if flag & FLAG_UNMAP != 0:
-            unmappedReadsNum = unmappedReadsNum +1
-            if(OutPutUnMappedReads):
-                print >>fp_unmapped, line
+        if optDic['simulator'] == 'wgsim':
+            flag = evalWgsimSeq(line, evalDic, optDic)
+            if optDic['OutPutUnMappedReads'] and flag == UHIT:
+               print >>fp_unmapped, line 
         else:
-            mappedReadsNum = mappedReadsNum +1
-            if ref == answerChr:
-                if flag & FLAG_REVERSE == 0:
-                    if pos == answerLeftPos:
-                        perfectAlnNum = perfectAlnNum +1
-                else:
-                    if pos == answerRightPos - templateLen+1:
-                        perfectAlnNum = perfectAlnNum +1
+            print >>sys.stderr, "can't evaluation aligment result from simulator %s "%(optDic['simulator'])
+        #print samFormat
         totReadsNum = totReadsNum +1
         if totReadsNum % 100000 == 0:
             print >>sys.stderr, 'eval %u reads...'%(totReadsNum)
 	line = fp.readline()
-    
-    print >>sys.stderr, 'eval %u reads...'%(totReadsNum)
-    if(OutPutUnMappedReads):
+    if totReadsNum % 100000 != 0:
+        print >>sys.stderr, 'eval %u reads...'%(totReadsNum)
+    if(optDic['OutPutUnMappedReads']):
         fp_unmapped.close()
     fp.close()
+    
+    
+    unmappedReadsNum = evalDic['unmappedReadsNum']
+    mappedReadsNum = evalDic['mappedReadsNum']
+    perfectAlnNum = evalDic['perfectAlnNum']
     print '**********************************************'
     print 'Evaluation of the alignment result!'
     print 'Total reads Num : %u'%(totReadsNum)
