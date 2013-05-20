@@ -131,16 +131,20 @@ def diffSam_main(argv):
 	line1 = fp1.readline()
 	line2 = fp2.readline()
 	while len(line1) and len(line2):
-		if comp_seq_name(line1.split('\t')[0], line2.split('\t')[0]) < 0:
-			
+		split_line1 = line1.split('\t')
+		split_line2 = line2.split('\t')
+
+		if comp_seq_name(split_line1[0], split_line2[0]) < 0:
 			#print>>sys.stderr, line1
 			#print>>sys.stderr, '++++++++'
 			#print>>sys.stderr, line2
 			print line1,
 			line1 = fp1.readline()
-		elif comp_seq_name(line1.split('\t')[0], line2.split('\t')[0]) > 0:
+		elif comp_seq_name(split_line1[0], split_line2[0]) > 0:
 			line2 = fp2.readline()
-		elif comp_seq_name(line1.split('\t')[0], line2.split('\t')[0]) == 0:
+		elif comp_seq_name(split_line1[0], split_line2[0]) == 0:
+			if int(split_line1[1])&4 == 0 and int(split_line2[1])&4 !=0:
+				print line1,
 			line1 = fp1.readline()
 			line2 = fp2.readline()
 		else:
