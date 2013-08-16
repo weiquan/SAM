@@ -1,7 +1,7 @@
 #*
 # * =====================================================================================
 # *
-# *       Filename:  RepeatSam.py
+# *       Filename:  diffSam.py
 # *
 # *    Description:  
 # *
@@ -17,9 +17,8 @@
 # */
 import sys
 import os
-usage = '''*****Test repeat alignment in samfile****	
-		Usage:	RepeatSam.py <file1.sam> '''
-
+usage = """ diffSam2 <file1.sam> <file2.sam>
+	    print alned reads which are alned better in file1 than in file2	"""
 #from samtools
 #static inline int strnum_cmp(const char *a, const char *b)
 #{
@@ -40,6 +39,7 @@ usage = '''*****Test repeat alignment in samfile****
 #		return (pa-a) < (pb-b)? -1 : (pa-a) > (pb-b)? 1 : 0;
 #	return *pa<*pb? -1 : *pa>*pb? 1 : 0;
 #}
+
 
 def comp_seq_name(seqName1, seqName2):
 	start1 = 0
@@ -88,42 +88,85 @@ def comp_seq_name(seqName1, seqName2):
 
 			
 
-	
+SAM_FLAG_PAIRED  = 0x0001
+SAM_FLAG_PROPER_PAIRED  = 0x0002
+SAM_FLAG_UNMAPED  = 0x0004
+SAM_FLAG_MATE_UNMAPPED = 0x0008
+SAM_FLAG_STRAND =0x0010
+SAM_FLAG_MATE_STRAND =0x0020
+SAM_FLAG_MATE_READ1 =0x0040
+SAM_FLAG_MATE_READ2 =0x0080
+SAM_FLAG_SECANDARY_ALN =0x0100
+SAM_FLAG_QC =0x0200
+SAM_FLAG_PCR_DUP =0x0400
+
 		
-def testRepeat_main(argv):
-	if len(argv) < 2:
+def diffSam_main(argv):
+	if len(argv) < 3:
 		print usage
 		exit(1)
 	
 	prefix1 = sys.argv[1][:-4]
+	prefix2 = sys.argv[2][:-4]
 	Bam1 = prefix1 +".bam"
+	Bam2 = prefix2 + '.bam'
 	sortedPrefix1 = prefix1 + '.sorted'
+	sortedPrefix2 = prefix2 + '.sorted'
 	sortedBam1 = sortedPrefix1 + '.bam'
+	sortedBam2 = sortedPrefix2 + '.bam'
 	#convert sam to bam
 	cmd1 = "samtools view -bS "+sys.argv[1]+'>'+Bam1
+	cmd2 = "samtools view -bS "+sys.argv[2]+'>'+Bam2
 	print>>sys.stderr, cmd1
 	os.system(cmd1)
+	print>>sys.stderr, cmd2
+	os.system(cmd2)
 	#sort bam by name
 	cmd1 = "samtools sort -n "+Bam1+' '+sortedPrefix1
+	cmd2 = "samtools sort -n "+Bam2+' '+sortedPrefix2
 	print>>sys.stderr, cmd1
 	os.system(cmd1)
+	print>>sys.stderr, cmd2
+	os.system(cmd2)
 	#convert sorted bam to sam
 	cmd1 = "samtools view "+sortedBam1+'>'+prefix1+'.sorted.sam'
+	cmd2 = "samtools view "+sortedBam2+'>'+prefix2+'.sorted.sam'
 	print>>sys.stderr, cmd1
 	os.system(cmd1)
-	print>>sys.stderr, "test repeat in file "+ sys.argv[1]
-	fp = open(prefix1+'.sorted.sam', 'r')
-	last_line = ''
-	line = fp.readline()
-	while len(line):
-		if comp_seq_name(line.split('\t')[0], last_line.split('\t')[0]) != 0:
-			last_line = line
-		else:
-			print line
-		line = fp.readline()
-	fp.close()
+	print>>sys.stderr, cmd2
+	os.system(cmd2)
 
+	fp1 = open(prefix1+'.sorted.sam', 'r')
+	fp2 = open(prefix2+'.sorted.sam', 'r')
+
+	line1 = fp1.readline()
+	line2 = fp2.readline()
+	while len(line1) and len(line2):
+		split_line1 = line1.split('\t')
+		split_line2 = line2.split('\t')
+
+		if comp_seq_name(split_line1[0], split_line2[0]) < 0:#seq in line1 not in line2
+			#print>>sys.stderr, line1
+			#print>>sys.stderr, '++++++++'
+			#print>>sys.stderr, line2
+			print line1,
+			line1 = fp1.readline()
+		elif comp_seq_name(split_line1[0], split_line2[0]) > 0:#seq in line2 not in line1
+			line2 = fp2.readline()
+		elif comp_seq_name(split_line1[0], split_line2[0]) == 0:#seq both in line1 and line2
+			if int(split_line1[1])&SAM_FLAG_PROPER_PAIRED != 0 and int(split_line2[1])&SAM_FLAG_PROPER_PAIRED ==0:#alned in line1 not alned in line2
+				print line1,
+			line1 = fp1.readline()
+			line2 = fp2.readline()
+		else:#some unknown problem
+			print>>sys.stderr, 'erro!!!'
+	while len(line1):
+		print line1,
+		line1 = fp1.readline()
+
+	fp1.close()
+	fp2.close()	
 
 
 if __name__ == '__main__':
-	testRepeat_main(sys.argv)
+	diffSam_main(sys.argv)
