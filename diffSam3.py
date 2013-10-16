@@ -18,8 +18,7 @@
 #!/usr/bin/python2.7
 import sys
 import os
-usage = """ diffSam2 <file1.sam> <file2.sam>
-        print alned reads which are alned better in file1 than in file2 """
+
 #from samtools
 #static inline int strnum_cmp(const char *a, const char *b)
 #{
@@ -112,27 +111,28 @@ def diffSam_main(opt, args):
     sortedPrefix2 = prefix2 + '.sorted'
     sortedBam1 = sortedPrefix1 + '.bam'
     sortedBam2 = sortedPrefix2 + '.bam'
-    #convert sam to bam
-    cmd1 = "samtools view -bS "+sys.argv[1]+'>'+Bam1
-    cmd2 = "samtools view -bS "+sys.argv[2]+'>'+Bam2
-    print>>sys.stderr, cmd1
-    os.system(cmd1)
-    print>>sys.stderr, cmd2
-    os.system(cmd2)
-    #sort bam by name
-    cmd1 = "samtools sort -n "+Bam1+' '+sortedPrefix1
-    cmd2 = "samtools sort -n "+Bam2+' '+sortedPrefix2
-    print>>sys.stderr, cmd1
-    os.system(cmd1)
-    print>>sys.stderr, cmd2
-    os.system(cmd2)
-    #convert sorted bam to sam
-    cmd1 = "samtools view "+sortedBam1+'>'+prefix1+'.sorted.sam'
-    cmd2 = "samtools view "+sortedBam2+'>'+prefix2+'.sorted.sam'
-    print>>sys.stderr, cmd1
-    os.system(cmd1)
-    print>>sys.stderr, cmd2
-    os.system(cmd2)
+    if not os.path.exists(prefix1+'.sorted.sam') and not os.path.exists(prefix2+'.sorted.sam'):   
+        #convert sam to bam
+        cmd1 = "samtools view -bS "+args[0]+'>'+Bam1
+        cmd2 = "samtools view -bS "+args[1]+'>'+Bam2
+        print>>sys.stderr, cmd1
+        os.system(cmd1)
+        print>>sys.stderr, cmd2
+        os.system(cmd2)
+        #sort bam by name
+        cmd1 = "samtools sort -n "+Bam1+' '+sortedPrefix1
+        cmd2 = "samtools sort -n "+Bam2+' '+sortedPrefix2
+        print>>sys.stderr, cmd1
+        os.system(cmd1)
+        print>>sys.stderr, cmd2
+        os.system(cmd2)
+        #convert sorted bam to sam
+        cmd1 = "samtools view "+sortedBam1+'>'+prefix1+'.sorted.sam'
+        cmd2 = "samtools view "+sortedBam2+'>'+prefix2+'.sorted.sam'
+        print>>sys.stderr, cmd1
+        os.system(cmd1)
+        print>>sys.stderr, cmd2
+        os.system(cmd2)
     fn1 = prefix1+'.sorted.sam'
     fn2 = prefix2+'.sorted.sam'
     fp1 = open(fn1, 'r')
@@ -144,6 +144,9 @@ def diffSam_main(opt, args):
     while len(line1) and len(line2):
         split_line1 = line1.split('\t')
         split_line2 = line2.split('\t')
+
+
+
 
         if comp_seq_name(split_line1[0], split_line2[0]) < 0:#seq in line1 not in line2
             #print>>sys.stderr, line1

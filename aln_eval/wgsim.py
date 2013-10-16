@@ -10,7 +10,7 @@ def usage():
     opt:            -h/--help       help 
                     -u  str         print unmapped reads to file with name str
                     -m  str         print mapped reads to file with name str'''
-    print >>sys.err, usage_wgsim_alnEval
+    print >>sys.stderr, usage_wgsim_alnEval
 
 
 def parseWgsimAnswer(seqName):
@@ -56,7 +56,7 @@ def wgsim_alnEval(arg):
     except getopt.GetoptError as err:
         print >>sys.stderr, str(err) # will print something like "option -a not recognized"
         usage()
-        sys.exit(2)
+        sys.exit(1)
 
     for o, a in opts:
         if o in ("-h", "--help"):
