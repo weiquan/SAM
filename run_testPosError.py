@@ -57,7 +57,7 @@ def readfq(fp):
             if last: # reach EOF before reading enough quality
                 yield name, seq, None # yield a fasta record instead
                 break
-                
+
 def parseCigar(cigar):
     _encode = 'MIDNSHP'
 
@@ -99,12 +99,10 @@ if __name__ == '__main__':
         if line[0] == '@':
             continue
         words = line.strip().split('\t')
-        ans_chrom = words.split('_')[0]
-        ans_pos0 = int(words.split('_')[1])
-        ans_pos1 = int(words.split('_')[2])
-
-
         name = words[0]
+        ans_chrom = name.split('_')[0]
+        ans_pos0 = int(name.split('_')[1])
+        ans_pos1 = int(name.split('_')[2])
         flag = int(words[1])
         chrom = words[2]
         pos = int(words[3])
@@ -112,6 +110,10 @@ if __name__ == '__main__':
         rev_seq = [complNT[c] for c in seq]
         rev_seq = rev_seq[::-1]
 
+       
+
+
+    
         cigar = words[5]
         cigar_list = parseCigar(cigar)
         read_start = 0
