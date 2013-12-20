@@ -62,14 +62,17 @@ def parseCigar(cigar):
     _encode = 'MIDNSHP'
 
     result = []
+    n = ''
     for c in cigar:
-        n = ''
+
         if c.isdigit():
             n += c
         elif c in _encode:
             if n == '':
+		print cigar
                 raise ValueError("end of CIGAR string reached, but an operator was expected")
             result.append((c, int(n)))
+    	    n = ''	
     return result
 
 if __name__ == '__main__':
@@ -106,9 +109,9 @@ if __name__ == '__main__':
         flag = int(words[1])
         chrom = words[2]
         pos = int(words[3])
-        seq = words[9]
+        seq = words[9].upper()
         rev_seq = [complNT[c] for c in seq]
-        rev_seq = rev_seq[::-1]
+        rev_seq = ''.join(rev_seq[::-1]).upper()
 
        
 
@@ -121,33 +124,45 @@ if __name__ == '__main__':
         if cigar_list[0][0] == 'S':
             read_start = cigar_list[0][1] 
         if cigar_list[-1][0] == 'S':
-            read_end -= cigar_list[-1][1]
+            read_end -= cigar_list[-1][1] 
         read = seq[read_start:read_end]
-        ref = index[chrom][pos:pos+read_end-read_start]
+        ref = index[chrom][pos-1:pos+read_end-read_start-1].upper()
         d = lev1(ref, read)
 
         l = len(seq)
-        ref0 = index[ans_chrom][ans_pos0:ans_pos0+l]
+        ref0 = index[ans_chrom][ans_pos0-1:ans_pos0+l-1].upper()
         read0 = seq
         if flag & 0x0010 != 0:
             read0 = rev_seq
         d1 = lev1(ref0, read0)
 
-        ref1 = index[ans_chrom][ans_pos1-l+1:ans_pos1]
+        ref1 = index[ans_chrom][ans_pos1-l-1:ans_pos1-1].upper()
         read1 = rev_seq
         if flag & 0x0010 == 0:
-            read0 = seq
+            read1 = seq
         d2 = lev1(ref1, read1)
-        if d < min(d1, d2):
-            print '[0]: >d_ans < d_mapped'
+        
+	if d < min(d1, d2):
+            print '[0]: d_aligner < d_simulator  '
+	    
             print line.strip()
         elif d == min(d1, d2):
-            print '[1]: >ans and mapped pos have the same distance'
+            print '[1]: d_aligner = d_simulator '
             print line.strip()
         else:
-            print '[0]: >d_ans > d_mapped'
+            print '[2]: d_simulator > d_aligner '
             print line.strip()
-
+	print '@Alinger: '+str(d)
+	print '[Ref]: '+ref
+	print '[SEQ]: '+read
+	if d1 <= d2:
+	   print '@Simulator: '+str(d1)
+	   print '[Ref]: '+ref0
+	   print '[SEQ]: '+read0
+        else:
+	   print '@Simulator: '+str(d2)
+	   print '[Ref]: '+ref1
+	   print '[SEQ]: '+read1
     fp_sam.close()
     
 
