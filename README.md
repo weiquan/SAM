@@ -1,7 +1,7 @@
 #SAM format tookits
 
 ##Introduciton
-Some scripts to parse [SAM](http://samtools.sourceforge.net/)) format.
+Some scripts to parse [SAM](http://samtools.sourceforge.net/) format.
 ##Tools
 #2. Tools
 
