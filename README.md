@@ -3,8 +3,6 @@
 ##Introduciton
 Some scripts to parse [SAM](http://samtools.sourceforge.net/) format.
 ##Tools
-#2. Tools
-
 Tools provided in this tookit.
 
 ID |  Description										|  Src
