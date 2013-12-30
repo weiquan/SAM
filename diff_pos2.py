@@ -1,7 +1,6 @@
 import sys
 class samTrack:
     def __init__(self, line):
-        self.line = line.strip()
         split_line = line.split('\t')
         self.qname = split_line[0]
         self.flag = int(split_line[1]) 
@@ -23,91 +22,81 @@ def skipSamHeader(fp):
     while line[0] == '@':
         line = fp.readline()
     fp.seek(-len(line),1)
-
-def diffSam_main(opt, arg): 
-    Distance = int(opt.max_diff)
+def parseWgsimAnswer(seqName):
+    split_name = seqName.split('_')
+    chr = split_name[0]
+    pos0 = int(split_name[1])
+    pos1 = int(split_name[2])
+    return chr, pos0, pos1
     
+def diffSam_wgsim_main(opt, arg):
+    Distance = opt.max_diff
+    Length = opt.read_length
     filename1, filename2 = arg[0], arg[1]
-
+    
     fp1 = open(filename1, 'r')
     fp2 = open(filename2, 'r')
-
-   # leftPair, rightPair = ['', ''], ['', '']
-
+    
+    leftPair, rightPair = ['', ''], ['', '']
     #read header from file1
     #read header from file2
     skipSamHeader(fp1)
     skipSamHeader(fp2)
     #core loop
-    n = 0
     fileEndFlag1, fileEndFlag2 = False, False
     while True:
-    
+        answerChr, answerpos0, answerpos1 = None, None, None
         samTrack0 , samTrack1= [None, None], [None, None]
         #read 2 lines from file1 and file2
         for i in range(2):
-            
             line1 = fp1.readline()
             if len(line1) == 0:
                 fileEndFlag1 = True
                 break   #break for
             samTrack0[i] = samTrack(line1[:-1])
-            
+            leftPair[i] = line1[:-1]
             line2 = fp2.readline()
             if len(line2) == 0:
                 fileEndFlag2 = True
                 break   #break for
             samTrack1[i] = samTrack(line2[:-1])
-        
+            rightPair[i] = line2[:-1]
         if fileEndFlag1 == True or fileEndFlag2 == True:
-            break #break while 
-        
+            break #break while
         if samTrack0[0].qname == samTrack0[1].qname == samTrack1[0].qname == samTrack1[1].qname:
-            #print >>sys.stderr, '>nameSame' 
-            pass
+            #print >>sys.stderr, '>nameSame'
+            answerChr, answerpos0, answerpos1 = parseWgsimAnswer(samTrack0[0].qname) 
+            answerpos1 -= Length-1
         else:
-            print '@nameError' 
-            print samTrack0[0].qname
-            print samTrack0[1].qname
-            print samTrack1[0].qname
-            print samTrack1[1].qname
-            if opt.print_SamTrack:
-                print samTrack0[0].line
-                print samTrack0[1].line
-                print samTrack1[0].line
-                print samTrack1[1].line
+            print >>sys.stderr, '>nameError'
+            print >>sys.stderr, samTrack0[0].qname
+            print >>sys.stderr, samTrack0[1].qname
+            print >>sys.stderr, samTrack1[0].qname
+            print >>sys.stderr, samTrack1[1].qname
             continue
-
-        
-        #print samTrack0[0].pos
-        #print samTrack0[1].pos
-        #print samTrack1[0].pos
-        #print samTrack1[1].pos
-
         if (samTrack0[0].rname, samTrack0[1].rname) == (samTrack1[0].rname, samTrack1[1].rname) and \
             abs(samTrack0[0].pos - samTrack1[0].pos) < Distance and \
             abs(samTrack0[1].pos - samTrack1[1].pos) < Distance:
-            #print samTrack0[0].pos, samTrack1[0].pos, samTrack0[1].pos, samTrack1[1].pos
             pass
         elif (samTrack0[0].rname, samTrack0[1].rname) == (samTrack1[1].rname, samTrack1[0].rname) and \
-             abs(samTrack0[0].pos - samTrack1[1].pos) < Distance and \
-             abs(samTrack0[1].pos - samTrack1[0].pos) < Distance:
-            #print samTrack0[0].pos, samTrack1[1].pos, samTrack0[0].pos, samTrack1[1].pos
+            abs(samTrack0[0].pos - samTrack1[1].pos) < Distance and \
+            abs(samTrack0[1].pos - samTrack1[0].pos) < Distance:
             pass
         else:
-            print '@posDiff'
-            print samTrack0[0].rname, samTrack0[0].pos
-            print samTrack0[1].rname, samTrack0[1].pos
-            print samTrack1[0].rname, samTrack1[0].pos
-            print samTrack1[1].rname, samTrack1[1].pos
-            if opt.print_SamTrack:
-                print samTrack0[0].line
-                print samTrack0[1].line
-                print samTrack1[0].line
-                print samTrack1[1].line
-        n += 2
-        if n %100000 == 0:
-            print >>sys.stderr, '%d lines finished!'%(n)
+            if samTrack0[0].rname == samTrack0[1].rname == answerChr and \
+                ( abs(samTrack0[0].pos - answerpos0) < Distance and
+                  abs(samTrack0[1].pos - answerpos1) < Distance):
+                print >>sys.stderr, '>posDiff   1T_2F'
+            elif samTrack1[0].rname == samTrack1[1].rname == answerChr and \
+                ( abs(samTrack1[0].pos - answerpos0) < Distance and
+                  abs(samTrack1[1].pos - answerpos1) < Distance):
+                print >>sys.stderr, '>posDiff   1F_2T'
+            else:
+                print >>sys.stderr, '>posDiff   1F_2F'
+            print >>sys.stderr, leftPair[0]
+            print >>sys.stderr, leftPair[1]
+            print >>sys.stderr, rightPair[0]
+            print >>sys.stderr, rightPair[1]
     fp1.close()
     fp2.close()
 
@@ -118,14 +107,13 @@ if __name__ == '__main__':
     usage = "usage: %prog [Options] <file1> <file2>"
     parser = optparse.OptionParser(usage)
     parser.add_option('-d', '--diff', action = 'store', type = 'int',  dest='max_diff', help = 'max diff between different SAM', default= 4)
-    parser.add_option('-p', '--print', action = 'store_true', dest='print_SamTrack', help = 'print sam track', default= False)
-
-    #get opt
+    parser.add_option('-l', '--length', action = 'store', type = 'int',  dest='read_length', help = 'max diff between different SAM', default= 100)
+    #get options
     options, args = parser.parse_args()
     if len(args) != 2:
         parser.print_help()
         exit(1)
-    diffSam_main(options, args)
+    diffSam_wgsim_main(options, args)
 
 
 
