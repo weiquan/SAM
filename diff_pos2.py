@@ -36,7 +36,8 @@ def diffSam_wgsim_main(opt, arg):
     
     fp1 = open(filename1, 'r')
     fp2 = open(filename2, 'r')
-    
+    if options.ans_file != '':
+        fp_ans = open(options.ans_file)
     leftPair, rightPair = ['', ''], ['', '']
     #read header from file1
     #read header from file2
@@ -65,8 +66,12 @@ def diffSam_wgsim_main(opt, arg):
             break #break while
         if samTrack0[0].qname == samTrack0[1].qname == samTrack1[0].qname == samTrack1[1].qname:
             #print >>sys.stderr, '>nameSame'
-            answerChr, answerpos0, answerpos1 = parseWgsimAnswer(samTrack0[0].qname) 
-            answerpos1 -= Length-1
+            if options.ans_file == '':
+                answerChr, answerpos0, answerpos1 = parseWgsimAnswer(samTrack0[0].qname) 
+                answerpos1 -= Length-1
+            else:
+                answerChr, answerpos0, answerpos1 = fp_ans.readline.strip().split('\t')
+                answerpos1 -= Length-1
         else:
             print >>sys.stderr, '>nameError'
             print >>sys.stderr, samTrack0[0].qname
@@ -84,12 +89,12 @@ def diffSam_wgsim_main(opt, arg):
             pass
         else:
             if samTrack0[0].rname == samTrack0[1].rname == answerChr and \
-                ( abs(samTrack0[0].pos - answerpos0) < Distance and
-                  abs(samTrack0[1].pos - answerpos1) < Distance):
+                ( abs(min(samTrack0[0].pos, samTrack0[1].pos) - answerpos0) < Distance and
+                  abs(max(samTrack0[0].pos, samTrack0[1].pos) - answerpos1) < Distance):
                 print >>sys.stderr, '>posDiff   1T_2F'
             elif samTrack1[0].rname == samTrack1[1].rname == answerChr and \
-                ( abs(samTrack1[0].pos - answerpos0) < Distance and
-                  abs(samTrack1[1].pos - answerpos1) < Distance):
+                ( abs(min(samTrack1[0].pos, samTrack1[1].pos) - answerpos0) < Distance and
+                  abs(max(samTrack1[0].pos, samTrack1[1].pos) - answerpos1) < Distance):
                 print >>sys.stderr, '>posDiff   1F_2T'
             else:
                 print >>sys.stderr, '>posDiff   1F_2F'
@@ -99,7 +104,8 @@ def diffSam_wgsim_main(opt, arg):
             print >>sys.stderr, rightPair[1]
     fp1.close()
     fp2.close()
-
+    if options.ans_file != '':
+        fp_ans.close()
 import optparse
 
 if __name__ == '__main__':
@@ -107,7 +113,9 @@ if __name__ == '__main__':
     usage = "usage: %prog [Options] <file1> <file2>"
     parser = optparse.OptionParser(usage)
     parser.add_option('-d', '--diff', action = 'store', type = 'int',  dest='max_diff', help = 'max diff between different SAM', default= 4)
-    parser.add_option('-l', '--length', action = 'store', type = 'int',  dest='read_length', help = 'max diff between different SAM', default= 100)
+    parser.add_option('-l', '--length', action = 'store', type = 'int',  dest='read_length', help = 'read length', default= 100)
+    parser.add_option('-a', '--answer', action = 'store', type = 'string',  dest='ans_file', help = 'answer file name', default= '')
+
     #get options
     options, args = parser.parse_args()
     if len(args) != 2:
