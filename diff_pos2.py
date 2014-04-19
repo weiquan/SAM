@@ -23,10 +23,11 @@ def skipSamHeader(fp):
         line = fp.readline()
     fp.seek(-len(line),1)
 def parseWgsimAnswer(seqName):
-    split_name = seqName.split('_')
-    chr = split_name[0]
-    pos0 = int(split_name[1])
-    pos1 = int(split_name[2])
+    import re
+    pattern = re.compile(r'^(\S+)_(\d+)_(\d+)')
+    chr, pos0, pos1 = pattern.search(seqName).groups() 
+    pos0 = int(pos0)
+    pos1 = int(pos1)
     return chr, pos0, pos1
     
 def diffSam_wgsim_main(opt, arg):
@@ -48,7 +49,7 @@ def diffSam_wgsim_main(opt, arg):
     while True:
         answerChr, answerpos0, answerpos1 = None, None, None
         samTrack0 , samTrack1= [None, None], [None, None]
-        #read 2 lines from file1 and file2
+        #read paired-end reads track from file1 and file2
         for i in range(2):
             line1 = fp1.readline()
             if len(line1) == 0:
@@ -64,12 +65,13 @@ def diffSam_wgsim_main(opt, arg):
             rightPair[i] = line2[:-1]
         if fileEndFlag1 == True or fileEndFlag2 == True:
             break #break while
+        #parse answer
         if samTrack0[0].qname == samTrack0[1].qname == samTrack1[0].qname == samTrack1[1].qname:
             #print >>sys.stderr, '>nameSame'
-            if options.ans_file == '':
+            if options.ans_file == '':#parse answer from read name
                 answerChr, answerpos0, answerpos1 = parseWgsimAnswer(samTrack0[0].qname) 
                 answerpos1 -= Length-1
-            else:
+            else:#parse answer from answer file
                 answerChr, answerpos0, answerpos1 = fp_ans.readline.strip().split('\t')
                 answerpos1 -= Length-1
         else:
@@ -79,6 +81,7 @@ def diffSam_wgsim_main(opt, arg):
             print >>sys.stderr, samTrack1[0].qname
             print >>sys.stderr, samTrack1[1].qname
             continue
+        #Check whether pos is correct
         if (samTrack0[0].rname, samTrack0[1].rname) == (samTrack1[0].rname, samTrack1[1].rname) and \
             abs(samTrack0[0].pos - samTrack1[0].pos) < Distance and \
             abs(samTrack0[1].pos - samTrack1[1].pos) < Distance:
