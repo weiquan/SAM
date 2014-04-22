@@ -45,11 +45,15 @@ class samTrack:
         self.seq = split_line[9]
         self.qual = split_line[10]
         if len(split_line) > 11:
-            self.opt = split_line[11]
+            self.opt = split_line[11:]
         else:
             self.opt = None
-
-
+    def _parseXA(self, opts):
+        opt_list = []
+        for opt in opts:
+            if opt[:2] == 'XA':
+                pos_list = opt.split(':')[2].split(';')
+        return opt_list
 def skipSamHeader(fp):
     line = fp.readline()
     while line[0] == '@':
@@ -73,10 +77,11 @@ def parseCigar(cigar):
             n = ''  
     return result
 def parseWgsimAnswer(seqName):
-    split_name = seqName.split('_')
-    chr = split_name[0]
-    pos0 = int(split_name[1])
-    pos1 = int(split_name[2])
+    import re
+    pattern = re.compile(r'^(\S+)_(\d+)_(\d+)_')
+    chr, pos0, pos1 = pattern.search(seqName).groups() 
+    pos0 = int(pos0)
+    pos1 = int(pos1)
     return chr, pos0, pos1
 def lev1(seq1, seq2):
     oneago = None
@@ -110,8 +115,8 @@ def diffSam_wgsim_main(opt, arg):
 
     fp1 = open(filename1, 'r')
     fp2 = open(filename2, 'r')
-    if options.ans_file != '':
-        fp_ans = open(options.ans_file)
+    if opt.ans_file != '':
+        fp_ans = open(opt.ans_file)
     leftPair, rightPair = ['', ''], ['', '']
     #read header from file1
     #read header from file2
@@ -142,7 +147,7 @@ def diffSam_wgsim_main(opt, arg):
         if samTrack0[0].qname == samTrack0[1].qname ==\
            samTrack1[0].qname == samTrack1[1].qname:
             #print >>sys.stderr, '>nameSame'
-            if options.ans_file == '':  # parse answer from read name
+            if opt.ans_file == '':  # parse answer from read name
                 answerChr, answerpos0, answerpos1 =\
                     parseWgsimAnswer(samTrack0[0].qname)
                 answerpos1 -= Length-1
@@ -194,9 +199,9 @@ def diffSam_wgsim_main(opt, arg):
                     if cigar_list[-1][0] == 'S': read_end -= cigar_list[-1][1] 
                     ref = dictRef[track.rname][track.pos-1:track.pos-1+l_ref].upper()
                     read = track.seq[read_start:read_end].upper()
-                    print>>sys.stderr, ref
-                    print>>sys.stderr, read
-
+                    if opt.print_seq:
+                        print>>sys.stderr, ref
+                        print>>sys.stderr, read
                     d[i] = lev1(ref, read)
                 print>>sys.stderr, '>edit distance %d %d %d %d'%(d[0], d[1], d[2], d[3])
                 print>>sys.stderr, '>diff distance %d %d'%(d[0]-d[2], d[1]- d[3])
@@ -207,7 +212,7 @@ def diffSam_wgsim_main(opt, arg):
             print >>sys.stderr, rightPair[1]
     fp1.close()
     fp2.close()
-    if options.ans_file != '':
+    if opt.ans_file != '':
         fp_ans.close()
 import optparse
 
@@ -218,7 +223,8 @@ if __name__ == '__main__':
     parser.add_option('-d', '--diff', action = 'store', type = 'int',  dest='max_diff', help = 'max diff between different SAM', default= 4)
     parser.add_option('-l', '--length', action = 'store', type = 'int',  dest='read_length', help = 'read length', default= 100)
     parser.add_option('-a', '--answer', action = 'store', type = 'string',  dest='ans_file', help = 'answer file name', default= '')
-    parser.add_option('-r', '--reference', action = 'store',  type = 'string', dest='ref', help = 'if reference is given, the edit distance will be printed', default= '')
+    parser.add_option('-r', '--reference', action = 'store',  type = 'string', dest='ref', help = 'if reference file name is given, the edit distance will be computed', default= '')
+    parser.add_option('-p', '--print', action = 'store_true',  dest='print_seq', help = 'print reference and read', default= False)
 
     #get options
     options, args = parser.parse_args()

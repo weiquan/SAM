@@ -74,7 +74,12 @@ def parseCigar(cigar):
             result.append((c, int(n)))
             n = ''  
     return result
-
+#template  CGGA TTTTTTAGGAG
+#seq     TTC GAATTTTTTGGGAG
+#cigar    2S1M1D2M1I11M
+#len_template 17
+#len_cigar 15
+#len_template = len_cigar-(Num of 'S')+(Num of 'D') - (Num of 'I') = Num of 'M' + Num of 'D'
 if __name__ == '__main__':
     usage = "usage: %prog [Options] <testFile.SAM> <Ref>"
     parser = optparse.OptionParser(usage)
@@ -121,11 +126,15 @@ if __name__ == '__main__':
             read_start = cigar_list[0][1] 
         if cigar_list[-1][0] == 'S':
             read_end -= cigar_list[-1][1] 
-        read = seq[read_start:read_end]
+        read = seq[read_start:read_end] 
         ref = index[chrom][pos-1:pos+read_end-read_start-1].upper()
         d = lev1(ref, read)
 
-        l = len(seq)
+        #l = len(seq)
+        l = 0 
+        for c, i in cigar_list:
+            if c == 'M' or c == 'D':
+                l += i
         ref0 = index[ans_chrom][ans_pos0-1:ans_pos0+l-1].upper()
         read0 = seq
         if flag & 0x0010 != 0:
