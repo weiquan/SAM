@@ -47,13 +47,13 @@ class samTrack:
         if len(split_line) > 11:
             self.opt = split_line[11:]
         else:
-            self.opt = None
-    def _parseXA(self, opts):
-        opt_list = []
-        for opt in opts:
+            self.opt = []
+    def parseXA(self):
+        aln_list = []
+        for opt in self.opt:
             if opt[:2] == 'XA':
-                pos_list = opt.split(':')[2].split(';')
-        return opt_list
+                aln_list = opt.split(':')[2].split(';')[:-1]
+        return aln_list
 def skipSamHeader(fp):
     line = fp.readline()
     while line[0] == '@':
@@ -107,7 +107,7 @@ def diffSam_wgsim_main(opt, arg):
         fp_ref.close()
 
 
-
+    
 
     Distance = opt.max_diff
     Length = opt.read_length
@@ -174,14 +174,46 @@ def diffSam_wgsim_main(opt, arg):
                 abs(samTrack0[1].pos - samTrack1[0].pos) < Distance:
             pass
         else:
+            flag_map_mate0 = 0
+            flag_map_mate1 = 0
+
             if samTrack0[0].rname == samTrack0[1].rname == answerChr and \
                 (abs(min(samTrack0[0].pos, samTrack0[1].pos) - answerpos0) < Distance and
                     abs(max(samTrack0[0].pos, samTrack0[1].pos) - answerpos1) < Distance):
-                print >>sys.stderr, '>posDiff   1T_2F'
+                aln_list0 = samTrack1[0].parseXA()
+                for string in aln_list0:
+                    chrom, pos, cigar, NM = string.split(',')
+                    pos = int(pos)
+                    if(chrom == answerChr and (abs(pos - answerpos0) < Distance or abs(pos- answerpos1) < Distance)):
+                        flag_map_mate0 = 1
+                        break
+                aln_list1 = samTrack1[0].parseXA()
+                for string in aln_list1:
+                    chrom, pos, cigar, NM = string.split(',')
+                    pos = int(pos)
+                    if(chrom == answerChr and (abs(pos - answerpos0) < Distance or abs(pos- answerpos1) < Distance)):
+                        flag_map_mate1 = 1
+                        break
+                print >>sys.stderr, '>posDiff   1T_2F %s_%s'%('01'[flag_map_mate0], '01'[flag_map_mate1])
+
             elif samTrack1[0].rname == samTrack1[1].rname == answerChr and \
                 (abs(min(samTrack1[0].pos, samTrack1[1].pos) - answerpos0) < Distance and
                   abs(max(samTrack1[0].pos, samTrack1[1].pos) - answerpos1) < Distance):
-                print >>sys.stderr, '>posDiff   1F_2T'
+                aln_list0 = samTrack0[0].parseXA()
+                for string in aln_list0:
+                    chrom, pos, cigar, NM = string.split(',')
+                    pos = int(pos)
+                    if(chrom == answerChr and (abs(pos - answerpos0) < Distance or abs(pos- answerpos1) < Distance)):
+                        flag_map_mate0 = 1
+                        break
+                aln_list1 = samTrack0[1].parseXA()
+                for string in aln_list1:
+                    chrom, pos, cigar, NM = string.split(',')
+                    pos = int(pos)
+                    if(chrom == answerChr and (abs(pos - answerpos0) < Distance or abs(pos- answerpos1) < Distance)):
+                        flag_map_mate1 = 1
+                        break
+                print >>sys.stderr, '>posDiff   1F_2T %s_%s'%('01'[flag_map_mate0], '01'[flag_map_mate1])
             else:
                 print >>sys.stderr, '>posDiff   1F_2F'
             if opt.ref != '':
