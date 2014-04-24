@@ -215,7 +215,43 @@ def diffSam_wgsim_main(opt, arg):
                         break
                 print >>sys.stderr, '>posDiff   1F_2T %s_%s'%('01'[flag_map_mate0], '01'[flag_map_mate1])
             else:
-                print >>sys.stderr, '>posDiff   1F_2F'
+                flag_map_mate0 = 0
+                flag_map_mate1 = 0
+                aln_list0 = samTrack0[0].parseXA()
+                for string in aln_list0:
+                    chrom, pos, cigar, NM = string.split(',')
+                    pos = int(pos)
+                    if(chrom == answerChr and (abs(pos - answerpos0) < Distance or abs(pos- answerpos1) < Distance)):
+                        flag_map_mate0 = 1
+                        break
+                aln_list1 = samTrack0[1].parseXA()
+                for string in aln_list1:
+                    chrom, pos, cigar, NM = string.split(',')
+                    pos = int(pos)
+                    if(chrom == answerChr and (abs(pos - answerpos0) < Distance or abs(pos- answerpos1) < Distance)):
+                        flag_map_mate1 = 1
+                        break
+                str0 = '01'[flag_map_mate0]+'_'+'01'[flag_map_mate1]
+                flag_map_mate0 = 0
+                flag_map_mate1 = 0
+                aln_list0 = samTrack1[0].parseXA()
+                for string in aln_list0:
+                    chrom, pos, cigar, NM = string.split(',')
+                    pos = int(pos)
+                    if(chrom == answerChr and (abs(pos - answerpos0) < Distance or abs(pos- answerpos1) < Distance)):
+                        flag_map_mate0 = 1
+                        break
+                aln_list1 = samTrack1[1].parseXA()
+                for string in aln_list1:
+                    chrom, pos, cigar, NM = string.split(',')
+                    pos = int(pos)
+                    if(chrom == answerChr and (abs(pos - answerpos0) < Distance or abs(pos- answerpos1) < Distance)):
+                        flag_map_mate1 = 1
+                        break
+                str1 = '01'[flag_map_mate0]+'_'+'01'[flag_map_mate1]
+
+                print >>sys.stderr, '>posDiff   1F_2F %s %s'%(str0, str1)
+            
             if opt.ref != '':
                 d = [0,0,0,0]
                 for i, track in enumerate((samTrack0[0], samTrack0[1], samTrack1[0], samTrack1[1])):
