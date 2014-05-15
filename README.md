@@ -11,6 +11,8 @@ ID |  Description										|  Src
 2  |  print the read not both alned correct in file1 and file2  		|  [diff_pos2.py]
 3  |  check whether the alned pos is right						|  [check_pos.py]
 
+##e.g.
+
 
 
 

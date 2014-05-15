@@ -62,12 +62,12 @@ class samTrack:
             xa_string = 'XA:Z:'
             for hit in self.xa:
                 xa_string += hit.chrom+','+str(hit.pos)+','+hit.cigar+','+str(hit.nm)+';'
-                print '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}'.format(
-                    self.qname, self.flag, self.rname, self.pos, self.mapq, self.cigar, 
-                    self.mrname, self.mpos, self.isize, self.seq, self.qual, xa_string)
+            print '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}'.format(
+                self.qname, self.flag, self.rname, self.pos, self.mapq, self.cigar, 
+                self.mrname, self.mpos, self.isize, self.seq, self.qual, xa_string)
+            return
         print '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}'.format(
             self.qname, self.flag, self.rname, self.pos, self.mapq, self.cigar, self.mrname, self.mpos, self.isize, self.seq, self.qual)
-
 import optparse
 if __name__ == '__main__':
     usage = "usage: %prog [Options] <file>"
@@ -77,14 +77,15 @@ if __name__ == '__main__':
     if len(arg) != 1:
         parser.print_help()
         exit(1)
-    
     fn = arg[0]
     fp = open(fn, 'r')
     buffer = []
     last_sam = None
+    sam0, sam1 = None, None
     for line in fp:
         line = line.strip()
         if line[0] == '@':#skip header
+            print line
             continue
         sam = samTrack(line)
         if len(buffer) == 0:
@@ -94,21 +95,21 @@ if __name__ == '__main__':
         if sam.qname == last_sam.qname:
             buffer.append(sam)
             last_sam = sam
-        else:
-            if len(buffer) >0:
-                sam0, sam1 = None, None
-                for x in buffer:
-                    if sam0 == None:
-                        sam0 = x
-                    elif sam0.isSameRead(x):
-                            sam0.mergeHit(x)
-                    elif sam1 == None:
-                            sam1 = x
-                    elif sam1.isSameRead(x):
-                            sam1.mergeHit(x)
-                    else:
-                        print >>sys.stderr, '[ERROR]: Neither SE nor PE!'
-                        sys.exit(1)
+        elif len(buffer) >0:
+            sam0, sam1 = None, None
+
+            for x in buffer:
+                if sam0 == None:
+                    sam0 = x
+                elif sam0.isSameRead(x):
+                    sam0.mergeHit(x)
+                elif sam1 == None:
+                    sam1 = x
+                elif sam1.isSameRead(x):
+                    sam1.mergeHit(x)
+                else:
+                    print >>sys.stderr, '[ERROR]: Neither SE nor PE!'
+                    sys.exit(1)
             if sam0 != None:
                 sam0.printSAM()
             if sam1 != None:
