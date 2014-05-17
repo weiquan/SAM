@@ -76,6 +76,14 @@ def parseCigar(cigar):
             result.append((c, int(n)))
             n = ''  
     return result
+def __parseCigar(cigar):
+    import re
+    p = re.compile(r'(\d+)([MIDNSHPX=])')
+    return p.findall(cigar)
+def __parseCigarIter(cigar):
+    import re
+    p = re.compile(r'(\d+)([MIDNSHPX=])')
+    return p.finditer(cigar)    
 def parseWgsimAnswer(seqName):
     import re
     pattern = re.compile(r'^(\S+)_(\d+)_(\d+)_')
