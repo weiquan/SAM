@@ -36,6 +36,8 @@ class gem ():
             self.hit0 = []
             self.hit1 = []
             for string in words[4].split(','):
+                if string == '-' or len(string) == 0:
+                    continue
                 if string.find(':::') > 0:
                     string, ann = string.split(':::')
                 aln0, aln1 = string.split('::')
@@ -54,6 +56,8 @@ class gem ():
             self.hit0 = []
             self.hit1 = None
             for string in words[4].split(','):
+                if string == '-' or len(string) == 0:
+                    continue
                 if string.find(':::') >0:
                     string, ann = string.split(':::')
                 aln0 = string
@@ -62,43 +66,50 @@ class gem ():
     def printHitSAM(self):
         flag = 0
         if self.is_pe:
-            flag &=FLAG_PAIRED
+            flag |=FLAG_PAIRED
             
         if self.is_pe and self.properPaired:
-            flag &=FLAG_PROPERPAIRED #to be edited
+            flag |=FLAG_PROPERPAIRED #to be edited
             flag0 = flag1 = flag
-            flag0 &= FLAG_READ0
-            flag1 &= FLAG_READ1
+            flag0 |= FLAG_READ0
+            flag1 |= FLAG_READ1
             isize0 = isize1 = abs(self.hit0[0].pos - self.hit1[0].pos)+len(self.seq1)
 
             if self.hit0[0].strand == '+' and self.hit1[0].strand == '-':
                 isize1 = -isize1
-                flag1 &= FLAG_STRANDBCKWARD1
+                flag1 |= FLAG_STRANDBCKWARD1
             elif self.hit0[0].strand == '-' and self.hit1[0].strand == '+':
                 isize0 = - isize0
-                flag0 &= FLAG_STRANDBCKWARD0
+                flag0 |= FLAG_STRANDBCKWARD0
             xa0 = xa1 = 'XA:Z:'
             for hit0, hit1 in itertools.izip(self.hit0[1:], self.hit1[1:]):
                 xa0 += hit0.chrom+','+str(hit0.pos)+','+hit0.cigar+','+'-1;'
                 xa1 += hit1.chrom+','+str(hit1.pos)+','+hit1.cigar+','+'-1;'
 
-            print '{0}  {1} {2} {3} 255 {4} {5} {6} {7} {8} {9}  {10}'.format(
+            print '{0}\t{1}\t{2}\t{3}\t255\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}'.format(
                     self.qname, flag0, self.hit0[0].chrom, self.hit0[0].pos, self.hit0[0].cigar, 
                     self.hit0[0].mate.chrom, self.hit0[0].mate.pos, isize0, self.seq0, self.qual0, xa0)
-            print '{0}  {1} {2} {3} 255 {4} {5} {6} {7} {8} {9}  {10}'.format(
+            print '{0}\t{1}\t{2}\t{3}\t255\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}'.format(
                     self.qname, flag1, self.hit1[0].chrom, self.hit1[0].pos, self.hit1[0].cigar, 
                     self.hit1[0].mate.chrom, self.hit1[0].mate.pos, isize1, self.seq1, self.qual1, xa1)
         else:
+            if self.is_pe and re.match(r'(\S+)[/|][12]', self.qname) != None:
+                flag |= FLAG_READ0
+            if self.is_pe and re.match(r'(\S+)[/|][12]', self.qname) != None:
+                flag |= FLAG_READ1
+            
+            if len(self.hit0) == 0:
+                flag |= FLAG_UNMAPPED0
+                print '{0}\t{1}\t*\t0\t255\t*\t*\t0\t0\t{2}\t{3}\t'.format(
+                    self.qname, flag, self.seq0, self.qual0)
+                return
             if self.hit0[0].strand == '-':
-                flag &= FLAG_STRANDBCKWARD0
-            if self.is_pe and re.match(r'(\S+)[/|][12]', self.qname) != None:
-                flag &= FLAG_READ0
-            if self.is_pe and re.match(r'(\S+)[/|][12]', self.qname) != None:
-                flag &= FLAG_READ1
+                flag |= FLAG_STRANDBCKWARD0
+           
             opt = 'XA:Z:'#to be edited
             for hit in self.hit0[1:]:
                 opt += hit.chrom+','+str(hit.pos)+','+hit.cigar+','+'-1;'
-            print '{0}  {1} {2} {3} 255 {4} * 0 0 {5} {6}  {7}'.format(
+            print '{0}\t{1}\t{2}\t{3}\t255\t{4}\t*\t0\t0\t{5}\t{6}\t{7}'.format(
                     self.qname, flag, self.hit0[0].chrom, self.hit0[0].pos, self.hit0[0].cigar, self.seq0, self.qual0, opt)
 if __name__ == '__main__':
     usage = "usage: %prog [Options] <file>"
