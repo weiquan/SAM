@@ -77,10 +77,13 @@ class gem ():
 
             if self.hit0[0].strand == '+' and self.hit1[0].strand == '-':
                 isize1 = -isize1
-                flag1 |= FLAG_STRANDBCKWARD1
+                flag0 |= FLAG_STRANDBCKWARD1
+                flag1 |= FLAG_STRANDBCKWARD0
+
             elif self.hit0[0].strand == '-' and self.hit1[0].strand == '+':
                 isize0 = - isize0
                 flag0 |= FLAG_STRANDBCKWARD0
+                flag1 |= FLAG_STRANDBCKWARD1
             xa0 = xa1 = 'XA:Z:'
             for hit0, hit1 in itertools.izip(self.hit0[1:], self.hit1[1:]):
                 xa0 += hit0.chrom+','+str(hit0.pos)+','+hit0.cigar+','+'-1;'
