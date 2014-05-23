@@ -1,5 +1,6 @@
 import sys
 import itertools
+#convert multi to xa
 FLAG_PAIRED = 0x0001
 FLAG_READ0 = 0x0040
 FLAG_READ1 = 0x0080
